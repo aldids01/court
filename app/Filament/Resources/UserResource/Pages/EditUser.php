@@ -14,7 +14,7 @@ class EditUser extends EditRecord
     {
         return [
             Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->visible(auth()->check() && auth()->user()->can('Delete User')),
         ];
     }
 }

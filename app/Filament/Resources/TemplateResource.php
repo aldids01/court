@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
+use Illuminate\Support\Facades\Auth;
 
 class TemplateResource extends Resource
 {
@@ -22,7 +23,10 @@ class TemplateResource extends Resource
     protected static ?string $navigationGroup = 'Forms';
     protected static ?string $recordTitleAttribute = 'name';
     protected static ?string $navigationIcon = 'heroicon-o-scale';
-
+    public static function shouldRegisterNavigation(): bool
+    {
+        return  Auth::user()->can('Create Form');
+    }
     public static function form(Form $form): Form
     {
         return $form

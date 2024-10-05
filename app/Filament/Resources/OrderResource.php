@@ -11,9 +11,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\View;
+use Mpdf\Mpdf;
 
 class OrderResource extends Resource
 {
@@ -22,7 +26,10 @@ class OrderResource extends Resource
     protected static ?string $navigationGroup = 'Forms';
     protected static ?string $recordTitleAttribute = 'client_name';
     protected static ?string $navigationIcon = 'heroicon-o-queue-list';
-
+    public static function shouldRegisterNavigation(): bool
+    {
+        return  Auth::user()->can('Fill Form');
+    }
     public static function form(Form $form): Form
     {
         return $form
@@ -109,6 +116,18 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Filled By')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->colors([
+                        'warning' => 'Pending',
+                        'danger' => 'Rejected',
+                        'success' => 'Approved',
+                    ])
+                    ->icons([
+                        'heroicon-m-x-mark' => 'Pending',
+                        'heroicon-m-x-circle' => 'Rejected',
+                        'heroicon-m-check-circle' => 'Approved',
+                    ])
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
@@ -120,17 +139,54 @@ class OrderResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn($record)=>$record->status != 'Approved'),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn($record)=>$record->status != 'Approved' && auth()->check() && auth()->user()->can('Delete Form')),
                 Tables\Actions\Action::make('detail')
-                ->label('Detail')
-                ->color('info')
-                ->icon('heroicon-o-document-magnifying-glass')
-                ->url(fn ($record) => route('details', $record)),
+                    ->label('View PDF')
+                    ->color('info')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->visible(fn($record)=>$record->status == 'Approved')
+                    ->url(fn($record)=>"/admin/orders/details/$record->id"),
+                Tables\Actions\Action::make('Approval')
+                    ->label('Approve')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->slideOver()
+                    ->icon('heroicon-m-check-circle')
+                    ->action(fn($record)=>$record->update(['approved_by' => Auth::user()->id, 'status' =>'Approved']))
+                    ->visible(fn($record)=>$record->status == 'Pending' && auth()->check() && auth()->user()->can('Approved Form')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->check() && auth()->user()->can('Delete Form'))
+                        ->action(function (Collection $records) {
+                            // Filter out records with 'Approved' status
+                            $deletableRecords = $records->filter(fn ($record) => $record->status != 'Approved');
+
+                            // Delete the filtered records
+                            $deletableRecords->each->delete();
+                        })
+                        ->requiresConfirmation()
+                        ->slideOver()
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('Approve')
+                        ->visible(fn () => auth()->check() && auth()->user()->can('Approved Form'))
+                        ->action(function (Collection $records) {
+                            // Filter out records with 'Approved' status
+                            $deletableRecords = $records->filter(fn ($record) => $record->status != 'Approved');
+
+                            // Delete the filtered records
+                            $deletableRecords->each->update(['approved_by' => Auth::user()->id, 'status' =>'Approved']);
+                        })
+                        ->label('Approve')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->slideOver()
+                        ->icon('heroicon-m-check-circle')
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
     }
@@ -148,7 +204,7 @@ class OrderResource extends Resource
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
             'view' => Pages\ViewOrder::route('/{record}'),
-            'detail' => Pages\DetailsOrder::route('/detail/{record}'),
+            'details' => Pages\DetailsOrder::route('/details/{record}'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
     }

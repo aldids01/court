@@ -19,6 +19,10 @@ class Order extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function approved():BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by', 'id');
+    }
 
     public function items():HasMany
     {

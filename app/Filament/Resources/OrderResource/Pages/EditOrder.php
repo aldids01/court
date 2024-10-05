@@ -13,8 +13,14 @@ class EditOrder extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\ViewAction::make()
+                ->label('View PDF')
+                ->color('info')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn($record)=>$record->status == 'Approved')
+                ->url(fn($record)=>"/admin/orders/details/$record->id"),
+            Actions\DeleteAction::make()
+                ->visible(fn($record)=>$record->status == 'Pending' && auth()->check() && auth()->user()->can('Delete Form')),
         ];
     }
 }

@@ -25,6 +25,10 @@
                             <p>{!! $block['data']['Paragraph'] !!}</p>
                         @endif
                     @endforeach
+                    <p style="display: flex; justify-content: flex-end; position: relative; top:40px;">
+                        ____________________
+                        <span style="position: absolute; left: 90%; transform: translateX(-50%); text-align: center; width: 100px; top: 20px;">Deponent</span>
+                    </p>
                 </div>
 
                 @if ($template && $template->image_f) <!-- Footer Image -->

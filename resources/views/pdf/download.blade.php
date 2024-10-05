@@ -7,8 +7,8 @@
     <title>Document</title>
 </head>
 <body>
-    <main style="margin: auto;" id="printable-content">
-        <div class="space-y-4" style="margin: auto;">
+    <main id="printable-content">
+        <div class="space-y-4">
             @foreach ($items as $item)
                 @php
                     // Check if content is already an array, if not, decode it
@@ -19,9 +19,9 @@
                 @endphp
 
                 @if ($content)
-                    <div class="page-section" style="position: relative; padding-top: 10mm; padding-bottom: 10mm"> <!-- Add padding for both images -->
+                    <div class="page-section" style="position: absolute; padding-top: 10mm; padding-bottom: 10mm"> <!-- Add padding for both images -->
                         @if ($template && $template->image_h) <!-- Header Image -->
-                            <div class="header-image" style="position: absolute; top: 10mm; right: 0; width: 350px; ">
+                            <div class="header-image" style="position: fixed; top: 10mm; right: 0; width: 350px; margin-left: auto">
                                 <img src="{{ asset('storage/' . $template->image_h) }}" alt="Header Image" style="width: 100%; height: auto;">
                             </div>
                         @endif
@@ -34,10 +34,15 @@
                                     {!! $block['data']['Paragraph'] !!}
                                 @endif
                             @endforeach
+                            <div style="margin-top:40px; text-align: right;">
+                                <p>______________________</p>
+                                <p style="margin-right: 40px;">Deponent</p>
+                            </div>
                         </div>
 
+
                         @if ($template && $template->image_f) <!-- Footer Image -->
-                            <div class="footer-image" style="position: absolute; bottom: 0; left: 0; right: 0; text-align: center; width:500px; margin: auto;">
+                            <div class="footer-image" style="position: fixed; bottom: 0; left: 0; right: 0; text-align: center; width:500px; margin: 150px auto auto;">
                                 <img src="{{ asset('storage/' . $template->image_f) }}" alt="Footer Image" style="width: 100%; height: auto;">
                             </div>
                         @endif
